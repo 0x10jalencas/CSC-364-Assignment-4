@@ -34,6 +34,21 @@ class Peer:
             peer_id=self.peer_id,
             shared_files=shared_files
         )
-
-        return registration.create_offer_messages()
     
+        return registration.create_offer_messages()
+
+# Testing
+if __name__ == "__main__":
+    peer = Peer(
+        host="127.0.0.1",
+        port=9001,
+        peer_id=generate_peer_id()
+    )
+
+    peer.setup_folders()
+    
+    print("Peer ID:", peer.peer_id)
+    print("Host:", peer.host)
+    print("Port:", peer.port)
+    print("Shared files:", peer.get_shared_files())
+    print("Registration messages:", peer.create_registration_messages())
