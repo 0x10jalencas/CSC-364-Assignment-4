@@ -23,6 +23,7 @@ class FileRequestMessage:
 class FileTransferMessage:
     message_type: MessageType = MessageType.TRANSFER
     file_data: bytes
+    chunk_number: int
 
 @dataclass
 class AcknowledgementMessage:

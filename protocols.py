@@ -43,21 +43,34 @@ class FileTransfer:
 
     def create_transfer_messages(self, file_data: bytes) -> list[FileTransferMessage]:
         messages = []
+        chunk_number = 0
 
-        for start in range(0, len(file_data), self.chunk_size):
-            chunk = file_data[start:start + self.chunk_size]
+
+        for chunk_start in range(0, len(file_data), self.chunk_size):
+            chunk = file_data[chunk_start:chunk_start + self.chunk_size]
 
             message = FileTransferMessage(
                 file_data=chunk
             )
             messages.append(message)
+            chunk_number += 1
+        
+        return messages
 
 
 @dataclass
 class ErrorHandling:
-    pass
+    peer_id: int
+    timeout_seconds: int = 5
+    max_retries: int = 3
 
-# Peer Registration
-PeerRegistration = []
-peer_uid = random.randint(1, 2**32-1)
-peer_uid = FileOfferMessage("Message")
+    def create_acknowledgement_message(self) -> AcknowledgmentMessage:
+        return AcknowledgmentMessage(peer_id=self.peer_id)
+    
+    def should_retransmit(self, ack_received: bool, retries_so_far: int) -> bool:
+        return not ack_received and retries_so_far < self.max_retries
+    
+
+def generate_peer_id() -> int:
+    return random.randint(1, 2**32-1)
+    
