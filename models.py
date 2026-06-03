@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 
-@dataclass
 class MessageType(str, Enum):
     OFFER = "O"
     REQUEST = "R"
@@ -10,22 +9,22 @@ class MessageType(str, Enum):
 
 @dataclass
 class FileOfferMessage:
-    message_type: MessageType = MessageType.OFFER
     peer_id: int
     file_name: str
+    message_type: MessageType = MessageType.OFFER
 
 @dataclass
 class FileRequestMessage:
-    message_type: MessageType = MessageType.REQUEST
     file_data: bytes
+    message_type: MessageType = MessageType.REQUEST
 
 @dataclass
 class FileTransferMessage:
-    message_type: MessageType = MessageType.TRANSFER
     file_data: bytes
     chunk_number: int
+    message_type: MessageType = MessageType.TRANSFER
 
 @dataclass
-class AcknowledgementMessage:
-    message_type: MessageType = MessageType.ACKNOWLEDGMENT
+class AcknowledgmentMessage:
     peer_id: int
+    message_type: MessageType = MessageType.ACKNOWLEDGMENT
