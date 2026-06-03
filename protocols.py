@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from models import (
-    MessageType,
     FileOfferMessage,
     FileRequestMessage,
     FileTransferMessage,
     AcknowledgmentMessage,
 )
 
-from enum import Enum
 import random
 
 
@@ -16,7 +14,7 @@ class PeerRegistration:
     peer_id: int
     shared_files: list[str]
 
-    def create_offer_message(self) -> list[FileOfferMessage]:
+    def create_offer_messages(self) -> list[FileOfferMessage]:
         messages = []
 
         for file_name in self.shared_files:
@@ -50,6 +48,7 @@ class FileTransfer:
             chunk = file_data[chunk_start:chunk_start + self.chunk_size]
 
             message = FileTransferMessage(
+                chunk_number=chunk_number,
                 file_data=chunk
             )
             messages.append(message)
