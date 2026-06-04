@@ -3,6 +3,10 @@ from dataclasses import dataclass
 
 from protocols import PeerRegistration, generate_peer_id
 from models import FileOfferMessage
+from wire import receive_message
+
+import socket
+
 
 @dataclass
 class Peer:
@@ -37,6 +41,26 @@ class Peer:
     
         return registration.create_offer_messages()
 
+    def start_server(self) -> None:
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen()
+
+        print(f"Peer {self.peer_id} listening on {self.host}:{self.port}")
+
+        while True:
+            connection, address = server_socket.accept()
+
+            print(f"Connection from {address}")
+
+            try:
+                message = receive_message(connection)
+                print("Received message:", message)
+
+            finally:
+                connection.close()
+
+
 # Testing
 if __name__ == "__main__":
     peer = Peer(
@@ -52,3 +76,5 @@ if __name__ == "__main__":
     print("Port:", peer.port)
     print("Shared files:", peer.get_shared_files())
     print("Registration messages:", peer.create_registration_messages())
+
+    peer.start_server()
