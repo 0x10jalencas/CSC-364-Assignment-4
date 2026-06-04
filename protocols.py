@@ -8,7 +8,6 @@ from models import (
 
 import random
 
-
 @dataclass
 class PeerRegistration:
     peer_id: int
@@ -45,7 +44,8 @@ class FileTransfer:
 
 
         for chunk_start in range(0, len(file_data), self.chunk_size):
-            chunk = file_data[chunk_start:chunk_start + self.chunk_size]
+            chunk_end = chunk_start + self.chunk_size
+            chunk = file_data[chunk_start:chunk_end]
 
             message = FileTransferMessage(
                 chunk_number=chunk_number,
@@ -63,8 +63,11 @@ class ErrorHandling:
     timeout_seconds: int = 5
     max_retries: int = 3
 
-    def create_acknowledgement_message(self) -> AcknowledgmentMessage:
-        return AcknowledgmentMessage(peer_id=self.peer_id)
+    def create_acknowledgment_message(self, chunk_number: int) -> AcknowledgmentMessage:
+        return AcknowledgmentMessage(
+            peer_id=self.peer_id,
+            chunk_number=chunk_number
+        )
     
     def should_retransmit(self, ack_received: bool, retries_so_far: int) -> bool:
         return not ack_received and retries_so_far < self.max_retries
@@ -72,4 +75,3 @@ class ErrorHandling:
 
 def generate_peer_id() -> int:
     return random.randint(1, 2**32-1)
-    
