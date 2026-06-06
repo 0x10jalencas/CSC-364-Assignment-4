@@ -11,6 +11,8 @@ import random
 @dataclass
 class PeerRegistration:
     peer_id: int
+    host: str
+    port: int
     shared_files: list[str]
 
     def create_offer_messages(self) -> list[FileOfferMessage]:
@@ -19,6 +21,8 @@ class PeerRegistration:
         for file_name in self.shared_files:
             message = FileOfferMessage(
                 peer_id=self.peer_id,
+                host=self.host,
+                port=self.port,
                 file_name=file_name
             )
             messages.append(message)

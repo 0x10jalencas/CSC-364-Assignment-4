@@ -4,9 +4,8 @@ import socket
 
 import argparse
 from protocols import ErrorHandling, generate_peer_id
-from models import FileRequestMessage, FileTransferMessage
+from models import FileLookupMessage, FileRequestMessage, FileTransferMessage, PeerListMessage
 from wire import send_message, receive_message
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", default="127.0.0.1")
@@ -28,10 +27,31 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 download_path = os.path.join(DOWNLOAD_FOLDER, FILE_NAME)
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+peers = lookup_file(FILE_NAME)
+
+if not peers:
+    print(f"No peers found with {FILE_NAME}")
+    exit()
 client_socket.connect((HOST, PORT))
 
 request_message = FileRequestMessage(file_name=FILE_NAME)
 send_message(client_socket, request_message)
+
+def lookup_file(file_name: str) -> list[dict]:
+    tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tracker_socket.connect((TRACKER_HOST, TRACKER_PORT))
+
+    lookup_message = FileLookupMessage(file_name=file_name)
+    send_message(tracker_socket, lookup_message)
+
+    response = receive_message(tracker_socket)
+    tracker_socket.close()
+
+    if isinstance(response, PeerListMessage):
+        return response.peers
+
+    return []
+
 
 with open(download_path, "wb") as file:
     while True:

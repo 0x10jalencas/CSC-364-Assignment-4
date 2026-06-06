@@ -7,6 +7,9 @@ from models import (
     FileRequestMessage,
     FileTransferMessage,
     AcknowledgmentMessage,
+    FileLookupMessage,
+    PeerListMessage,
+    ErrorMessage,
     MessageType
 )
 
@@ -17,6 +20,8 @@ def encode_message(message) -> bytes:
     if isinstance(message, FileOfferMessage):
         header = {
             "peer_id": message.peer_id,
+            "host": message.host,
+            "port": message.port,
             "file_name": message.file_name
         }
         payload = b""
@@ -37,6 +42,25 @@ def encode_message(message) -> bytes:
         header = {
             "peer_id": message.peer_id,
             "chunk_number": message.chunk_number
+        }
+        payload = b""
+
+        elif isinstance(message, FileLookupMessage):
+        header = {
+            "file_name": message.file_name
+        }
+        payload = b""
+
+    elif isinstance(message, PeerListMessage):
+        header = {
+            "file_name": message.file_name,
+            "peers": message.peers
+        }
+        payload = b""
+
+    elif isinstance(message, ErrorMessage):
+        header = {
+            "error": message.error
         }
         payload = b""
     
@@ -67,6 +91,8 @@ def decode_message(packet: bytes):
     if message_type == MessageType.OFFER.value:
         return FileOfferMessage(
             peer_id=header["peer_id"],
+            host=header["host"],
+            port=header["port"],
             file_name=header["file_name"],
         )
     
@@ -85,6 +111,22 @@ def decode_message(packet: bytes):
         return AcknowledgmentMessage(
             peer_id=header["peer_id"],
             chunk_number=header["chunk_number"],
+        )
+    
+    if message_type == MessageType.LOOKUP.value:
+        return FileLookupMessage(
+            file_name=header["file_name"],
+        )
+
+    if message_type == MessageType.PEER_LIST.value:
+        return PeerListMessage(
+            file_name=header["file_name"],
+            peers=header["peers"],
+        )
+
+    if message_type == MessageType.ERROR.value:
+        return ErrorMessage(
+            error=header["error"],
         )
 
     raise ValueError(f"Unknown message type: {message_type}")

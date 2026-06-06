@@ -14,6 +14,8 @@ class MessageType(str, Enum):
 class FileOfferMessage:
     peer_id: int
     file_name: str
+    port: int
+    host: str
     message_type: MessageType = MessageType.OFFER
 
 @dataclass
@@ -32,3 +34,20 @@ class AcknowledgmentMessage:
     peer_id: int
     chunk_number: int
     message_type: MessageType = MessageType.ACKNOWLEDGMENT
+
+@dataclass
+class FileLookupMessage:
+    file_name: str
+    message_type: MessageType = MessageType.LOOKUP
+
+
+@dataclass
+class PeerListMessage:
+    file_name: str
+    peers: list[dict]
+    message_type: MessageType = MessageType.PEER_LIST
+
+@dataclass
+class ErrorMessage:
+    error: str
+    message_type: MessageType = MessageType.ERROR

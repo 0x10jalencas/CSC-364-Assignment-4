@@ -34,10 +34,26 @@ class Peer:
 
         registration = PeerRegistration(
             peer_id=self.peer_id,
+            host=self.host,
+            port=self.port,
             shared_files=shared_files
         )
     
         return registration.create_offer_messages()
+
+    def register_with_tracker(self, tracker_host: str = "127.0.0.1", tracker_port: int = 8000) -> None:
+        registration_messages = self.create_registration_messages()
+
+        for message in registration_messages:
+            tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tracker_socket.connect((tracker_host, tracker_port))
+
+            send_message(tracker_socket, message)
+
+            response = receive_message(tracker_socket)
+            print("Tracker response:", response)
+
+            tracker_socket.close()
     
     def handle_connection(self, connection: socket.socket) -> None:
         message = receive_message(connection)
@@ -126,5 +142,7 @@ if __name__ == "__main__":
     print("Port:", peer.port)
     print("Shared files:", peer.get_shared_files())
     print("Registration messages:", peer.create_registration_messages())
+
+    peer.register_with_tracker()
 
     peer.start_server()
