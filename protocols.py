@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import random
+import hashlib
+
 from models import (
     FileOfferMessage,
     FileRequestMessage,
@@ -6,7 +9,6 @@ from models import (
     AcknowledgmentMessage,
 )
 
-import random
 
 @dataclass
 class PeerRegistration:
@@ -21,9 +23,9 @@ class PeerRegistration:
         for file_name in self.shared_files:
             message = FileOfferMessage(
                 peer_id=self.peer_id,
+                file_name=file_name,
                 host=self.host,
-                port=self.port,
-                file_name=file_name
+                port=self.port
             )
             messages.append(message)
 
@@ -37,6 +39,7 @@ class FileLookup:
     def create_request_message(self) -> FileRequestMessage:
         return FileRequestMessage(file_name=self.file_name)
 
+
 @dataclass
 class FileTransfer:
     file_name: str
@@ -46,15 +49,18 @@ class FileTransfer:
         messages = []
         chunk_number = 0
 
-
         for chunk_start in range(0, len(file_data), self.chunk_size):
             chunk_end = chunk_start + self.chunk_size
             chunk = file_data[chunk_start:chunk_end]
 
+            checksum = hashlib.sha256(chunk).hexdigest()
+
             message = FileTransferMessage(
+                file_data=chunk,
                 chunk_number=chunk_number,
-                file_data=chunk
+                checksum=checksum
             )
+
             messages.append(message)
             chunk_number += 1
         
@@ -78,4 +84,4 @@ class ErrorHandling:
     
 
 def generate_peer_id() -> int:
-    return random.randint(1, 2**32-1)
+    return random.randint(1, 2**32 - 1)

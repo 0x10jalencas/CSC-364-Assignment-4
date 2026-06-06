@@ -1,7 +1,13 @@
 import socket
 import threading
 
-from models import FileOfferMessage, FileLookupMessage, PeerListMessage, AcknowledgmentMessage, ErrorMessage
+from models import (
+    FileOfferMessage,
+    FileLookupMessage,
+    PeerListMessage,
+    AcknowledgmentMessage,
+    ErrorMessage
+)
 from wire import receive_message, send_message
 
 
@@ -26,7 +32,7 @@ def register_file(message: FileOfferMessage) -> None:
         already_registered = False
 
         for peer in file_registry[message.file_name]:
-            if peer["peer_id"] == message.peer_id:
+            if peer["host"] == message.host and peer["port"] == message.port:
                 already_registered = True
 
         if not already_registered:
@@ -39,33 +45,37 @@ def lookup_file(file_name: str) -> list[dict]:
 
 
 def handle_connection(connection: socket.socket) -> None:
-    message = receive_message(connection)
+    try:
+        message = receive_message(connection)
 
-    if isinstance(message, FileOfferMessage):
-        register_file(message)
+        if isinstance(message, FileOfferMessage):
+            register_file(message)
 
-        ack = AcknowledgmentMessage(
-            peer_id=message.peer_id,
-            chunk_number=0
-        )
+            response = AcknowledgmentMessage(
+                peer_id=message.peer_id,
+                chunk_number=0
+            )
 
-        send_message(connection, ack)
-        print(f"Registered {message.file_name} from peer {message.peer_id}")
+            send_message(connection, response)
+            print(f"Registered {message.file_name} from peer {message.peer_id}")
 
-    elif isinstance(message, FileLookupMessage):
-        peers = lookup_file(message.file_name)
+        elif isinstance(message, FileLookupMessage):
+            peers = lookup_file(message.file_name)
 
-        response = PeerListMessage(
-            file_name=message.file_name,
-            peers=peers
-        )
+            response = PeerListMessage(
+                file_name=message.file_name,
+                peers=peers
+            )
 
-        send_message(connection, response)
-        print(f"Lookup for {message.file_name}: {peers}")
+            send_message(connection, response)
+            print(f"Lookup for {message.file_name}: {peers}")
 
-    else:
-        error = ErrorMessage(error="Unsupported message type")
-        send_message(connection, error)
+        else:
+            response = ErrorMessage(error="Unsupported message type")
+            send_message(connection, response)
+
+    finally:
+        connection.close()
 
 
 def start_tracker() -> None:

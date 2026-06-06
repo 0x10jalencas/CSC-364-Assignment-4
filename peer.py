@@ -1,3 +1,4 @@
+import argparse
 import os
 import socket
 from dataclasses import dataclass
@@ -5,6 +6,7 @@ from dataclasses import dataclass
 from protocols import PeerRegistration, generate_peer_id, FileTransfer, ErrorHandling
 from models import FileOfferMessage, FileRequestMessage, AcknowledgmentMessage
 from wire import receive_message, send_message
+
 
 @dataclass
 class Peer:
@@ -123,16 +125,27 @@ class Peer:
 
             try:
                 self.handle_connection(connection)
+
             finally:
                 connection.close()
 
 
-# Testing
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--shared-folder", default="shared")
+    parser.add_argument("--download-folder", default="downloads")
+    parser.add_argument("--tracker-host", default="127.0.0.1")
+    parser.add_argument("--tracker-port", type=int, default=8000)
+    args = parser.parse_args()
+
     peer = Peer(
-        host="127.0.0.1",
-        port=9001,
-        peer_id=generate_peer_id()
+        host=args.host,
+        port=args.port,
+        peer_id=generate_peer_id(),
+        shared_folder=args.shared_folder,
+        download_folder=args.download_folder
     )
 
     peer.setup_folders()
@@ -143,6 +156,9 @@ if __name__ == "__main__":
     print("Shared files:", peer.get_shared_files())
     print("Registration messages:", peer.create_registration_messages())
 
-    peer.register_with_tracker()
+    peer.register_with_tracker(
+        tracker_host=args.tracker_host,
+        tracker_port=args.tracker_port
+    )
 
     peer.start_server()

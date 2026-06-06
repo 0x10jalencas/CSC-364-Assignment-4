@@ -20,9 +20,9 @@ def encode_message(message) -> bytes:
     if isinstance(message, FileOfferMessage):
         header = {
             "peer_id": message.peer_id,
+            "file_name": message.file_name,
             "host": message.host,
-            "port": message.port,
-            "file_name": message.file_name
+            "port": message.port
         }
         payload = b""
     
@@ -34,7 +34,8 @@ def encode_message(message) -> bytes:
 
     elif isinstance(message, FileTransferMessage):
         header = {
-            "chunk_number": message.chunk_number
+            "chunk_number": message.chunk_number,
+            "checksum": message.checksum
         }
         payload = message.file_data
     
@@ -45,7 +46,7 @@ def encode_message(message) -> bytes:
         }
         payload = b""
 
-        elif isinstance(message, FileLookupMessage):
+    elif isinstance(message, FileLookupMessage):
         header = {
             "file_name": message.file_name
         }
@@ -91,9 +92,9 @@ def decode_message(packet: bytes):
     if message_type == MessageType.OFFER.value:
         return FileOfferMessage(
             peer_id=header["peer_id"],
+            file_name=header["file_name"],
             host=header["host"],
             port=header["port"],
-            file_name=header["file_name"],
         )
     
     if message_type == MessageType.REQUEST.value:
@@ -105,6 +106,7 @@ def decode_message(packet: bytes):
         return FileTransferMessage(
             file_data=payload,
             chunk_number=header["chunk_number"],
+            checksum=header["checksum"],
         )
 
     if message_type == MessageType.ACKNOWLEDGMENT.value:
