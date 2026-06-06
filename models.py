@@ -6,6 +6,9 @@ class MessageType(str, Enum):
     REQUEST = "R"
     TRANSFER = "T"
     ACKNOWLEDGMENT = "A"
+    LOOKUP = "L"
+    PEER_LIST = "P"
+    ERROR = "E"
 
 @dataclass
 class FileOfferMessage:
@@ -15,7 +18,7 @@ class FileOfferMessage:
 
 @dataclass
 class FileRequestMessage:
-    file_data: bytes
+    file_name: str
     message_type: MessageType = MessageType.REQUEST
 
 @dataclass
@@ -27,4 +30,5 @@ class FileTransferMessage:
 @dataclass
 class AcknowledgmentMessage:
     peer_id: int
+    chunk_number: int
     message_type: MessageType = MessageType.ACKNOWLEDGMENT

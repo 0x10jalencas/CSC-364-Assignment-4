@@ -1,12 +1,10 @@
 import os
+import socket
 from dataclasses import dataclass
 
-from protocols import PeerRegistration, generate_peer_id
-from models import FileOfferMessage
-from wire import receive_message
-
-import socket
-
+from protocols import PeerRegistration, generate_peer_id, FileTransfer, ErrorHandling
+from models import FileOfferMessage, FileRequestMessage, AcknowledgmentMessage
+from wire import receive_message, send_message
 
 @dataclass
 class Peer:
@@ -40,6 +38,60 @@ class Peer:
         )
     
         return registration.create_offer_messages()
+    
+    def handle_connection(self, connection: socket.socket) -> None:
+        message = receive_message(connection)
+        print("Received message:", message)
+
+        if isinstance(message, FileRequestMessage):
+            self.send_requested_file(connection, message.file_name)
+
+    def send_requested_file(self, connection: socket.socket, file_name: str) -> None:
+        file_path = os.path.join(self.shared_folder, file_name)
+
+        if not os.path.isfile(file_path):
+            print(f"File not found: {file_name}")
+            return
+
+        with open(file_path, "rb") as file:
+            file_data = file.read()
+
+        transfer = FileTransfer(file_name=file_name)
+        transfer_messages = transfer.create_transfer_messages(file_data)
+
+        error_handler = ErrorHandling(peer_id=self.peer_id)
+        connection.settimeout(error_handler.timeout_seconds)
+
+        for transfer_message in transfer_messages:
+            ack_received = False
+            retries_so_far = 0
+
+            while not ack_received and retries_so_far < error_handler.max_retries:
+                send_message(connection, transfer_message)
+
+                try:
+                    ack_message = receive_message(connection)
+
+                    if (
+                        isinstance(ack_message, AcknowledgmentMessage)
+                        and ack_message.chunk_number == transfer_message.chunk_number
+                    ):
+                        ack_received = True
+                        print(f"Chunk {transfer_message.chunk_number} acknowledged")
+
+                    else:
+                        retries_so_far += 1
+                        print(f"Bad ACK for chunk {transfer_message.chunk_number}")
+
+                except socket.timeout:
+                    retries_so_far += 1
+                    print(f"Timeout waiting for ACK for chunk {transfer_message.chunk_number}")
+
+            if not ack_received:
+                print(f"Failed to send chunk {transfer_message.chunk_number}")
+                return
+
+        print(f"Finished sending {file_name}")
 
     def start_server(self) -> None:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,9 +106,7 @@ class Peer:
             print(f"Connection from {address}")
 
             try:
-                message = receive_message(connection)
-                print("Received message:", message)
-
+                self.handle_connection(connection)
             finally:
                 connection.close()
 
